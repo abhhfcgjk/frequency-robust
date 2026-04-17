@@ -5,7 +5,7 @@
 Для запуска обучения нужно запустить train.py:
 ```
 cd ufbrp
-python train.py
+CUDA_VISIBLE_DEVICES=0 nohup python ufbrp/train.py --config ufbrp/presets/cifar10/resnet50.yaml
 ```
 
 Параметры для обучения и датасет указываются в конфиге: `ufbrp/presets/config.yaml`
@@ -15,7 +15,7 @@ python train.py
 Для запуска тестирования атак нужно запустить eval.py:
 ```
 cd ufbrp
-python eval.py
+CUDA_VISIBLE_DEVICES=0 python ufbrp/eval.py --logs ufbrp/logs/resnet50
 ```
 
 В `ufbrp/presets/config.yaml` указываются теструемые атаки:
