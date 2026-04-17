@@ -1,0 +1,50 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results-imagenet
+logs_dir: ufbrp/logs
+
+data:
+  num_classes: 1000
+  dataset: ImageNet
+  directory: data/imagenet
+
+lr_scheduler:
+  type: step
+  gamma: 0.1
+  step_size: 30
+
+optimizer:
+  type: sgd
+  momentum: 0.9
+  lr: 0.1
+  weight_decay: 0.0001
+
+train:
+  model: dbftt
+  epochs: 90
+  num_workers: 4
+  batch_size: 32
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: none
+  test:
+    -
+      type: fgsm
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: pgd
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: autoattack
+      params:
+        eps: 8.0
+        mode: zero

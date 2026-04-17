@@ -1,0 +1,53 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results-cifar100
+logs_dir: ufbrp/logs
+
+data:
+  num_classes: 100
+  dataset: CIFAR100
+  directory: data/CIFAR100
+
+lr_scheduler:
+  type: step
+  step_size: 30
+  gamma: 0.1
+
+optimizer:
+  type: adam
+  lr: 0.001
+
+train:
+  model: dbftt-adv
+  epochs: 300
+  jacobian_delta: 0.0
+  num_workers: 4
+  batch_size: 128
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: fgsm
+    params:
+      eps: 8.0
+      alpha: 2.5
+      mode: zero
+  test:
+    -
+      type: fgsm
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: pgd
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: autoattack
+      params:
+        eps: 8.0
+        mode: zero

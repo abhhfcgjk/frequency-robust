@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ufbrp"
+version = "0.1.0"
+description = ""
+authors = [{ name="28i_mel", email="28i_mel@lab.graphicon.ru" }]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.setuptools]
+py-modules = ["ufbrp"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.black]     
+line-length = 120
+extend-exclude = ""
+
+[tool.ruff]
+line-length = 120
+lint.extend-select = ["I"]

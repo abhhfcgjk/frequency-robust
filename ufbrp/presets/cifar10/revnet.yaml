@@ -1,0 +1,38 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results
+logs_dir: ufbrp/logs
+
+data:
+  num_classes: 10
+  dataset: CIFAR10
+  directory: data/CIFAR10
+
+lr_scheduler:
+  type: cosine
+  T_max: 200
+  eta_min: 0
+
+optimizer:
+  type: adam
+  lr: 0.01
+  momentum: 0.9
+  weight_decay: 0.0005
+
+train:
+  model: revnet
+  epochs: 200
+  num_workers: 2
+  batch_size: 128
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: none
+  test:
+    -
+      type: autoattack
+      params:
+        eps: 3.0
+        mode: zero

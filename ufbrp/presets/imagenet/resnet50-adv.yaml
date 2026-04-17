@@ -1,0 +1,55 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results-imagenet
+logs_dir: ufbrp/logs
+checkpoints_path: ufbrp/logs/resnet50-adv
+model_path: logs/ufbrp-ufbrp_presets_imagenet_resnet50-adv/weights/final_weights.pt
+
+data:
+  num_classes: 1000
+  dataset: ImageNet
+  directory: data/imagenet
+
+lr_scheduler:
+  type: sequential
+  schedulers:
+    -
+      type: linear
+      start_factor: 0.01
+      end_factor: 1.0
+      total_iters: 5
+    -
+      type: cosine
+      T_max: 85
+      eta_min: 0.0
+  milestones:
+    - 5
+
+optimizer:
+  type: sgd
+  momentum: 0.9
+  lr: 0.5
+  weight_decay: 0.0001
+
+train:
+  model: resnet50-adv
+  epochs: 100
+  num_workers: 4
+  batch_size: 128
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: pgd
+    params:
+      eps: 4.0
+      alpha: 2.5
+      mode: zero
+      iters: 5
+  test:
+    -
+      type: autoattack
+      params:
+        eps: 4.0
+        mode: zero

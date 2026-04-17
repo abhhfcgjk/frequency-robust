@@ -1,0 +1,54 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results-imagenet
+logs_dir: ufbrp/logs
+checkpoints_path: ufbrp/logs/lipreg
+model_path: logs/ufbrp-ufbrp_presets_imagenet_lipreg/weights/final_weights.pt
+
+data:
+  num_classes: 1000
+  dataset: ImageNet
+  directory: data/imagenet
+
+lr_scheduler:
+  type: sequential
+  schedulers:
+    -
+      type: linear
+      start_factor: 0.01
+      end_factor: 1.0
+      total_iters: 5
+    -
+      type: cosine
+      T_max: 85
+      eta_min: 0.0
+  milestones:
+    - 5
+
+optimizer:
+  type: sgd
+  momentum: 0.9
+  lr: 0.5
+  weight_decay: 0.0001
+
+train:
+  model: lipreg
+  epochs: 100
+  wavelet_level: 2
+  wavelet_method: haar
+  jacobian_delta: 0.5
+  k: 1.0
+  num_workers: 4
+  batch_size: 128
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: none
+  test:
+    -
+      type: autoattack
+      params:
+        eps: 8.0
+        mode: zero
