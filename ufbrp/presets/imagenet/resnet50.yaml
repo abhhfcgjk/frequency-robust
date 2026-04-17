@@ -1,0 +1,49 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results-imagenet
+logs_dir: ufbrp/logs
+
+data:
+  num_classes: 1000
+  dataset: ImageNet
+  directory: data/imagenet
+
+lr_scheduler:
+  type: cosine
+  eta_min: 0.0
+  T_max: 90
+
+optimizer:
+  type: adam
+  lr: 0.1
+  weight_decay: 0.0001
+
+train:
+  model: resnet50
+  epochs: 100
+  num_workers: 4
+  batch_size: 200
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: none
+  test:
+    -
+      type: fgsm
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: pgd
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: autoattack
+      params:
+        eps: 8.0
+        mode: zero

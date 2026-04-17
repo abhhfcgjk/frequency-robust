@@ -1,0 +1,13 @@
+.venv/
+data/
+*/__pycache__/
+__pycache__/
+logs/
+logs_*
+*.out
+*.log
+__*.py
+*.pyc
+*.egg-info/
+.ruff_cache/
+weights

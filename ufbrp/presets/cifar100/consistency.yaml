@@ -1,0 +1,50 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results
+logs_dir: ufbrp/logs
+
+data:
+  num_classes: 100
+  dataset: CIFAR100
+  directory: data/CIFAR100
+
+lr_scheduler:
+  type: cosine
+  T_max: 200
+  eta_min: 0
+
+optimizer:
+  type: sgd
+  lr: 0.01
+  momentum: 0.9
+  weight_decay: 0.0005
+
+train:
+  model: consistency
+  epochs: 200
+  num_workers: 2
+  batch_size: 128
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: none
+  test:
+    -
+      type: fgsm
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: pgd
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: autoattack
+      params:
+        eps: 8.0
+        mode: zero

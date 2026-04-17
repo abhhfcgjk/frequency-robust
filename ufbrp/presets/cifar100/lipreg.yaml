@@ -1,0 +1,53 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results-cifar100
+logs_dir: ufbrp/logs
+checkpoints_path: ufbrp/logs/lipreg-cifar100
+
+data:
+  num_classes: 100
+  dataset: CIFAR100
+  directory: data/CIFAR100
+
+lr_scheduler:
+  type: step
+  step_size: 50
+  gamma: 0.5
+
+optimizer:
+  type: adam
+  lr: 0.001
+
+train:
+  model: lipreg
+  epochs: 300
+  wavelet_level: 2
+  wavelet_method: haar
+  jacobian_delta: 0.5
+  k: 1.0
+  num_workers: 4
+  batch_size: 128
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: none
+  test:
+    -
+      type: fgsm
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: pgd
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: autoattack
+      params:
+        eps: 8.0
+        mode: zero

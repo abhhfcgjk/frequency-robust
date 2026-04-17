@@ -1,0 +1,54 @@
+label_strategy: origin
+perc: no
+eval_only: no
+results_dir: ufbrp/results-cifar100
+logs_dir: ufbrp/logs
+checkpoints_path: ufbrp/logs/resnet50-adv-cifar100
+
+data:
+  num_classes: 100
+  dataset: CIFAR100
+  directory: data/CIFAR100
+
+lr_scheduler:
+  type: step
+  step_size: 50
+  gamma: 0.5
+
+optimizer:
+  type: adam
+  lr: 0.001
+
+train:
+  model: resnet50-adv
+  epochs: 300
+  num_workers: 4
+  batch_size: 128
+  val_criterion: Accuracy
+
+attack:
+  train:
+    type: pgd
+    params:
+      eps: 4.0
+      alpha: 2.5
+      mode: zero
+      iters: 5
+  test:
+    -
+      type: fgsm
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: pgd
+      params:
+        eps: 8.0
+        alpha: 2.5
+        mode: zero
+    -
+      type: autoattack
+      params:
+        eps: 8.0
+        mode: zero
