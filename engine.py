@@ -69,6 +69,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
         else: # full precision
             output = model(samples)
             loss = criterion(output, targets)
+        
+        # if hasattr(model, "penalty"):
+        loss += model.module.penalty
 
         # Antia Aliasing additional loss
         aa_reg_alpha = 0.0001

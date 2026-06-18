@@ -304,7 +304,7 @@ class LipReg_aa(nn.Module):
         x_decompose = self.x_high + x_low
         if self.training:
             self.__penalty = self.__jacobian_penalty(x_decompose)
-        x = self.forward_features(x)
+        x = self.forward_features(x_decompose)
         x = self.head(x)
         return x
 

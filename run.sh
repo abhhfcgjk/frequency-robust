@@ -16,7 +16,7 @@ if [ -f "$SBATCH_SCRIPT" ]; then
         STATE=$(sacct -j "$JOBID" --format=State --noheader | head -n 1 | awk '{print $1}')
 
         echo "Job $JOBID finished with state: $STATE"
-        if [[ "$STATE" != "TIMEOUT" ]]; then
+        if [[ "$STATE" != "TIMEOUT" && "$STATE" != "FAILED" ]]; then
             break
         fi
     done

@@ -155,7 +155,7 @@ def create_optimizer(args, model, get_num_layer=None, get_layer_scale=None, filt
         # print(param_group)
         # print(parameters)
         # parameters.update(param_group)
-        optimizer = optim.AdamW(parameters, **opt_args)
+        optimizer = optim.AdamW(param_group, **opt_args)
     elif opt_lower == 'nadam':
         optimizer = Nadam(parameters, **opt_args)
     elif opt_lower == 'radam':
