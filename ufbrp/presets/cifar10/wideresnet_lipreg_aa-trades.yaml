@@ -1,9 +1,9 @@
 label_strategy: origin
 perc: no
 eval_only: no
-results_dir: ufbrp/results
+results_dir: ufbrp/results-cifar10
 logs_dir: ufbrp/logs
-checkpoints_path: ufbrp/logs/wideresnet-cifar10
+checkpoints_path: ufbrp/logs/wideresnet_lipreg_aa-trades-cifar10
 
 data:
   num_classes: 10
@@ -18,17 +18,32 @@ lr_scheduler:
 optimizer:
   type: adam
   lr: 0.01
+  aa_lr: 0.0003
 
 train:
-  model: wideresnet
+  aa_reg_alpha: 0.0001
+  filt_size: 5
+  model: wideresnet_lipreg_aa
+  wavelet_level: 2
+  wavelet_method: haar
+  jacobian_delta: 0.5
+  k: 1.0
   epochs: 200
-  num_workers: 2
+  num_workers: 4
   batch_size: 128
   val_criterion: Accuracy
-
+  loss:
+    name: trades
+    beta: 1.0
+ 
 attack:
   train:
-    type: none
+    type: pgd
+    params:
+      eps: 4.0
+      alpha: 2.5
+      mode: zero
+      iters: 1
   test:
     -
       type: fgsm

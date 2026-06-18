@@ -12,13 +12,13 @@ IMAGE=/scratch/amoskalenko/users/28i_mel/base270.sqsh
 WORKDIR=/scratch/amoskalenko/users/28i_mel/wideresnet
 
 CONFIGS=(
-ufbrp/presets/cifar10/wideresnet_lipreg_aa-trades.yaml
-ufbrp/presets/cifar100/wideresnet_lipreg_aa-trades.yaml
+ufbrp/presets/cifar10/wideresnet.yaml
+ufbrp/presets/cifar100/wideresnet.yaml
 )
 
 LOGS=(
-wideresnet_lipreg_aa-trades-cifar10.log
-wideresnet_lipreg_aa-trades-cifar100.log
+wideresnet.log
+wideresnet.log
 )
 
 srun -n 1 \
@@ -34,13 +34,13 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 
 CONFIGS=(
-  "ufbrp/presets/cifar10/wideresnet_lipreg_aa-trades.yaml"
-  "ufbrp/presets/cifar100/wideresnet_lipreg_aa-trades.yaml"
+  "ufbrp/presets/cifar10/wideresnet.yaml"
+  "ufbrp/presets/cifar100/wideresnet.yaml"
 )
 
 LOGS=(
-  "wideresnet_lipreg_aa-trades-cifar10.log"
-  "wideresnet_lipreg_aa-trades-cifar100.log"
+  "wideresnet.log"
+  "wideresnet.log"
 )
 
 ID=${SLURM_PROCID}

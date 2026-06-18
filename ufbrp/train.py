@@ -11,6 +11,7 @@ from typing import Any, Dict
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.amp import GradScaler
 from torch.optim import SGD, Adam, lr_scheduler
 from torch.utils.tensorboard import SummaryWriter
@@ -208,6 +209,9 @@ class AdversarialTrainer:
         if self.adv_reg == "nmse":
             self.reg = NMSERegularizationLoss(p_clean=0.5)
 
+        # if self.loss_name == "trades":
+        #     self.attacker = None
+        # else:
         self.attacker = self._init_attack(self.config["attack"]["train"])
 
         # if self.gpu == 0:
@@ -308,7 +312,15 @@ class AdversarialTrainer:
 
             def loss_computer(y, target):
                 return loss(y, target)
+        elif self.loss_name == "trades":
+            loss = nn.KLDivLoss(reduction="batchmean")
 
+            def loss_computer(y, target):
+                # print(target, y)
+                target_one = F.one_hot(target.long(), num_classes=self.num_classes).float()
+                y_one = F.softmax(y, dim=1)
+                # print(y_one)
+                return loss(F.log_softmax(target_one, dim=1), y_one)
         else:
             loss = nn.CrossEntropyLoss()
 
@@ -329,6 +341,39 @@ class AdversarialTrainer:
             return out.requires_grad_(True), torch.hstack((label, label))
         else:
             return adv_input.detach().requires_grad_(True), label
+
+    def _trades_attack_step(self, input):
+        attack_params = self.config["attack"]["train"]["params"]
+        eps = attack_params["eps"] / 255
+        step_size = attack_params.get("alpha", attack_params["eps"]) / 255
+        num_steps = attack_params.get("iters", 10)
+        init_std = attack_params.get("init_std", 0.001)
+        lower = input.detach() - eps
+        upper = input.detach() + eps
+
+        was_training = self.model.training
+        self.model.eval()
+        try:
+            with torch.no_grad():
+                clean_probs = F.softmax(self.model(input), dim=1)
+                attacked = input.detach() + init_std * torch.randn_like(input)
+                attacked = torch.min(torch.max(attacked, lower), upper)
+                attacked = torch.clamp(attacked, 0.0, 1.0)
+
+            for _ in range(num_steps):
+                attacked.requires_grad_()
+                attacked_logit = self.model(attacked)
+                loss_kl = F.kl_div(F.log_softmax(attacked_logit, dim=1), clean_probs, reduction="batchmean")
+                grad = torch.autograd.grad(loss_kl, [attacked])[0]
+
+                attacked = attacked.detach() + step_size * torch.sign(grad.detach())
+                attacked = torch.min(torch.max(attacked, lower), upper)
+                attacked = torch.clamp(attacked, 0.0, 1.0)
+
+            return attacked.detach().requires_grad_(True)
+        finally:
+            if was_training:
+                self.model.train()
 
     def lpf_smoothness_loss(self, module, alpha=1e-4, beta=5e-5, eps=1e-8):
         a = module.get_kernel()
@@ -354,9 +399,9 @@ class AdversarialTrainer:
             for step, data in tqdm(enumerate(self.train_loader), total=len(self.train_loader)):
                 metrics = self._train_step(data, step, batch_start_time)
                 # if self.gpu == 0:
-                dump_scalar_metrics(
-                    metrics, self.writer, "train", global_step=done_steps + step, dataset=self.dataset_name
-                )
+                # dump_scalar_metrics(
+                #     metrics, self.writer, "train", global_step=done_steps + step, dataset=self.dataset_name
+                # )
                 batch_start_time = time.time()
             self.current_epoch += 1
 
@@ -372,9 +417,9 @@ class AdversarialTrainer:
             val_metrics["Recall"] = self.metric_computer.recall
             val_metrics["F1Score"] = self.metric_computer.f1score
             val_criterion = val_metrics["Accuracy"]
-            dump_scalar_metrics(
-                val_metrics, self.writer, "val", global_step=done_steps + step, dataset=self.dataset_name
-            )
+            # dump_scalar_metrics(
+            #     val_metrics, self.writer, "val", global_step=done_steps + step, dataset=self.dataset_name
+            # )
             last_ckpt = {
                 "model": self.model.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
@@ -432,10 +477,18 @@ class AdversarialTrainer:
         inputs.requires_grad_(True)
         metrics["data_time"] = time.time() - start_time
         self.optimizer.zero_grad()
+
         if self.attacker is not None:
             attacked, label = self._attack_step(inputs, label)
+            print(self.loss_name)
             if self.loss_name != "trades":
                 inputs = attacked
+
+        # if self.loss_name == "trades":
+        #     attacked = self._trades_attack_step(inputs)
+        # elif self.attacker is not None:
+        #     attacked, label = self._attack_step(inputs, label)
+        #     inputs = attacked
 
         if self.use_labels:
             self.model.model.label = label
@@ -446,6 +499,7 @@ class AdversarialTrainer:
         if self.loss_name == "trades":
             attacked_logit = self.model(attacked)
             loss = self.loss(model_out, attacked_logit, label)
+            # print(loss)
         else:
             loss = self.loss(model_out, label)
         loss += self.model.model.penalty

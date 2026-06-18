@@ -30,6 +30,8 @@ from ufbrp.models import (
     RevNetDBFTT,
     RevNetSmall,
     create_model,
+    WideResNet_L,
+    LipReg_aa_WideResNet
 )
 from ufbrp.utils import load_config
 
@@ -71,6 +73,15 @@ class AdversarialEvaluator:
         elif self.config["train"]["model"] in ("resnet50_aa", "resnet50_aa-adv"):
             filt_size = self.config["train"].get("filt_size", 3)
             model = ResNet50Blur(num_classes=self.num_classes, filter_size=filt_size, learnable=True)
+        elif self.config["train"]["model"] in ("wideresnet", "wideresnet-adv"):
+            model = WideResNet_L(num_classes=self.num_classes)
+        elif self.config["train"]["model"] in ("wideresnet_lipreg_aa", "wideresnet_lipreg_aa-adv"):
+            self.AntiAliasing = True
+            self.learnable = True
+            filt_size = self.config["train"].get("filt_size", 3)
+            model = LipReg_aa_WideResNet(num_classes=self.num_classes, 
+                                         filter_size=filt_size, 
+                                         learnable=self.learnable)
         elif self.config["train"]["model"] in ("dbftt", "dbftt-adv"):
             model = DBFTT(
                 wavelet_level=self.config["train"]["wavelet_level"],

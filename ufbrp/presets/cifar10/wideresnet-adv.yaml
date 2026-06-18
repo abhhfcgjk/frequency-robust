@@ -3,7 +3,7 @@ perc: no
 eval_only: no
 results_dir: ufbrp/results
 logs_dir: ufbrp/logs
-checkpoints_path: ufbrp/logs/wideresnet-cifar10
+checkpoints_path: ufbrp/logs/wideresnet-adv-cifar10
 
 data:
   num_classes: 10
@@ -28,7 +28,12 @@ train:
 
 attack:
   train:
-    type: none
+    type: pgd
+    params:
+      eps: 4.0
+      alpha: 2.5
+      mode: zero
+      iters: 1
   test:
     -
       type: fgsm
