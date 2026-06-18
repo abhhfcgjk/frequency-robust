@@ -772,6 +772,31 @@ class LipRegSwinTransformer(nn.Module):
     @property
     def penalty(self):
         return self.pre_penalty()
+    
+    def jacobian_penalty(self, x, sigma=0.25):
+        bs = x.shape[0]
+        w = x.shape[-1]
+        k = (w / 32) ** 2
+
+        with torch.cuda.amp.autocast(enabled=False):
+            x_fp32 = x.float()
+            noise = torch.randn_like(x_fp32) * sigma
+
+            old_use_checkpoint = []
+            for layer in self.layers:
+                old_use_checkpoint.append(layer.use_checkpoint)
+                layer.use_checkpoint = False
+
+            out1 = self.forward_features(x_fp32)
+            out2 = self.forward_features(x_fp32 + noise)
+
+            for layer, old in zip(self.layers, old_use_checkpoint):
+                layer.use_checkpoint = old
+
+            difference = out1 - out2
+            norm = torch.norm(difference, p="fro")
+
+        return self.jacobian_delta * norm / (bs * k)
 
     def clamp_grad(self, x):
         # print("GRad", x.grad)
