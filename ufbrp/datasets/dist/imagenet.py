@@ -59,7 +59,7 @@ class ImageNetDataset:
     def __init__(self, directory: str):
         self.data_dir = directory
         self.train_set_path = os.path.join(self.data_dir, "train")
-        self.val_set_path = os.path.join(self.data_dir, "val")
+        self.val_set_path = os.path.join(self.data_dir, "val_clear")
         self.synset_id_to_train_idx: Dict[int, int] = {}
 
     def get_train_dataset(self, train_transforms: Optional[transforms.Compose] = None) -> Dataset:

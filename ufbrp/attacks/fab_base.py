@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import time
 
 import torch
-from attacks.fab_projections import projection_l1, projection_l2, projection_linf
+from .fab_projections import projection_l1, projection_l2, projection_linf
 
 DEFAULT_EPS_DICT_BY_NORM = {"Linf": 0.3, "L2": 1.0, "L1": 5.0}
 

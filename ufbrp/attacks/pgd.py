@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from attacks.base import Attacker
+from .base import Attacker
 from torch import Tensor
 
 

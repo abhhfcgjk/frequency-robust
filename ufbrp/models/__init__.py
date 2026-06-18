@@ -6,9 +6,10 @@ from .lipreg import LipReg
 from .normalize_model import create_model
 from .resnet import ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
 from .revnet import WaveNetSmall
-from .lipreg_aa import LipReg_aa
+from .lipreg_aa import LipReg_aa, LipReg_aa_WideResNet
 from .resnet_blur import ResNet50Blur
 from .blurpool import BlurPool
+from .wideresnet import WideResNet_L
 
 __all__ = [
     "create_model",
@@ -28,5 +29,7 @@ __all__ = [
     "AdvDBFTT",
     "LipReg_aa",
     "ResNet50Blur",
-    "BlurPool"
+    "BlurPool",
+    "LipReg_aa_WideResNet",
+    "WideResNet_L"
 ]

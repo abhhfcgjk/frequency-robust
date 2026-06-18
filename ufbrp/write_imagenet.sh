@@ -29,5 +29,5 @@ write_dataset () {
     ls -lh "$final"
 }
 
-write_dataset train $1 $2 $3
+# write_dataset train $1 $2 $3
 write_dataset  val  $1 $2 $3

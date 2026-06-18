@@ -11,12 +11,13 @@ set -e
 
 IMAGE=/scratch/amoskalenko/users/28i_mel/base270.sqsh
 WORKDIR=/scratch/amoskalenko/users/28i_mel/unified-frequency-based-robustness-pipeline
+DATASET=/scratch/amoskalenko/users/28i_mel/datasets
 PYTHON_VERSION=3.11
 OUTPUT_LOGS=ffcv.out
 
 srun --exclusive --nodes=1 --ntasks=1 --cpus-per-task=12 --gpus-per-node=8 \
         --container-image "${IMAGE}" \
-        --container-mounts "${WORKDIR}:/workspace/ufbrp" \
+        --container-mounts "${WORKDIR}:/workspace/ufbrp",${DATASET}:/dataset \
         bash -c "
                 set -e
                 cd /workspace/ufbrp
@@ -36,8 +37,8 @@ srun --exclusive --nodes=1 --ntasks=1 --cpus-per-task=12 --gpus-per-node=8 \
 
                 echo 'Write dataset to .ffcv format'
                 pip install natsort
-                export IMAGENET_DIR=data/imagenet
-                export WRITE_DIR=data/imagenet/ffcv_smart
+                export IMAGENET_DIR=/dataset/imagenet
+                export WRITE_DIR=/dataset/imagenet/ffcv
                 bash ufbrp/write_imagenet.sh 500 0.50 90
         " > "${OUTPUT_LOGS}" 2>&1 &
 wait

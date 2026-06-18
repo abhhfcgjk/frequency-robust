@@ -8,8 +8,8 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import torch
-from attacks.fab_base import FABAttack
-from attacks.other_utils import zero_gradients
+from .fab_base import FABAttack
+from .other_utils import zero_gradients
 
 
 class FABAttack_PT(FABAttack):

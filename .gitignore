@@ -10,3 +10,4 @@ _test.py
 *.egg-info/
 .ruff_cache/
 weights
+models

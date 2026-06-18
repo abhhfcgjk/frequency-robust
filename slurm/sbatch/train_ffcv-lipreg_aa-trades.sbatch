@@ -15,7 +15,7 @@ IMAGE=/scratch/amoskalenko/users/28i_mel/base270.sqsh
 WORKDIR=/scratch/amoskalenko/users/28i_mel/unified-frequency-based-robustness-pipeline
 TRAIN_CONFIG=rn50_88_epochs.yaml
 configs=(
-  ufbrp/presets/imagenet/lipreg_aa-adv.yaml
+  ufbrp/presets/imagenet/lipreg_aa-trades.yaml
 )
 
 for cfg in "${configs[@]}"; do

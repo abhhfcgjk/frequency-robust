@@ -1,14 +1,14 @@
 import math
 from collections.abc import Callable
 
-import attacks.checks as checks
+from . import  checks
 import numpy as np
 import torch
-from attacks.autopgd import APGDAttack, APGDAttack_targeted
-from attacks.base import Attacker
-from attacks.fab_pt import FABAttack_PT
-from attacks.square import SquareAttack
-from attacks.state import EvaluationState
+from .autopgd import APGDAttack, APGDAttack_targeted
+from .base import Attacker
+from .fab_pt import FABAttack_PT
+from .square import SquareAttack
+from .state import EvaluationState
 from torch import Tensor
 
 

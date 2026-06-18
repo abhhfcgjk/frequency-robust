@@ -1,5 +1,5 @@
 import torch
-from attacks.base import Attacker
+from .base import Attacker
 
 
 def check_zero_gradients(grad, logger=None):

@@ -27,8 +27,8 @@ for cfg in "${configs[@]}"; do
 
     LOCAL=${SLURM_TMPDIR:-/tmp/$USER/$SLURM_JOB_ID}
     mkdir -p "$LOCAL/ffcv"
-    SRC_TRAIN="/scratch/amoskalenko/users/28i_mel/unified-frequency-based-robustness-pipeline/data/imagenet/ffcv_raw/train.ffcv"
-    SRC_VAL="/scratch/amoskalenko/users/28i_mel/unified-frequency-based-robustness-pipeline/data/imagenet/ffcv_raw/val.ffcv"
+    SRC_TRAIN="/scratch/amoskalenko/users/28i_mel/datasets/imagenet/ffcv/train.ffcv"
+    SRC_VAL="/scratch/amoskalenko/users/28i_mel/datasets/imagenet/ffcv/val.ffcv"
 
     echo "Coping dataset to the ${LOCAL}"
     rsync -aP "$SRC_TRAIN" "$LOCAL/ffcv/train.ffcv.tmp" && mv "$LOCAL/ffcv/train.ffcv.tmp" "$LOCAL/ffcv/train.ffcv"

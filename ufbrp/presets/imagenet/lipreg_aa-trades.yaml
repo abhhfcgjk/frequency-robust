@@ -3,8 +3,8 @@ perc: no
 eval_only: no
 results_dir: ufbrp/results-imagenet
 logs_dir: ufbrp/logs
-checkpoints_path: ufbrp/logs/lipreg_aa-adv
-model_path: logs/ufbrp-ufbrp_presets_imagenet_lipreg_aa-adv/weights/final_weights.pt
+checkpoints_path: ufbrp/logs/lipreg_aa-trades
+model_path: logs/ufbrp-ufbrp_presets_imagenet_lipreg_aa-trades/weights/final_weights.pt
 
 data:
   num_classes: 1000
@@ -45,6 +45,10 @@ train:
   num_workers: 4
   batch_size: 128
   val_criterion: Accuracy
+  loss:
+    name: trades
+    beta: 1.0
+
 
 attack:
   train:
@@ -53,7 +57,7 @@ attack:
       eps: 4.0
       alpha: 2.5
       mode: zero
-      iters: 5
+      iters: 1
   test:
     -
       type: pgd

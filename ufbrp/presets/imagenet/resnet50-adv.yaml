@@ -9,7 +9,7 @@ model_path: logs/ufbrp-ufbrp_presets_imagenet_resnet50-adv/weights/final_weights
 data:
   num_classes: 1000
   dataset: ImageNet
-  directory: data/imagenet
+  directory: /dataset
 
 lr_scheduler:
   type: sequential
@@ -46,7 +46,7 @@ attack:
       eps: 4.0
       alpha: 2.5
       mode: zero
-      iters: 5
+      iters: 1
   test:
     -
       type: autoattack

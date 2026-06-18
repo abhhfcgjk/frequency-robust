@@ -36,6 +36,7 @@ from ffcv.fields.basics import IntDecoder
 
 from ufbrp.attacks.base import Attacker
 from ufbrp.attacks.pgd import ImageNetPGD
+from ufbrp.losses.trades import TRADESLoss
 
 from ufbrp.utils import load_config
 from ufbrp.models import (
@@ -43,8 +44,7 @@ from ufbrp.models import (
     ResNet50Blur,
     LipReg,
     LipReg_aa,
-    BlurPool,
-    LipReg_aa_ConvNextV2
+    BlurPool
 )
 
 Section('model', 'model details').params(
@@ -152,6 +152,7 @@ class ImageNetTrainer:
         self.all_params = get_current_config()
         self.gpu = gpu
         self.config = load_config(config)
+        self.num_classes=1000
 
         self.uid = str(uuid4())
 
@@ -184,7 +185,11 @@ class ImageNetTrainer:
 
             def loss_computer(y, target):
                 return loss(y, target)
+        elif self.loss_name == "trades":
+            loss = nn.KLDivLoss(reduction="batchmean")
 
+            def loss_computer(y, target):
+                return loss(F.log_softmax(y, dim=1), target)
         else:
             loss = nn.CrossEntropyLoss()
 
@@ -304,7 +309,17 @@ class ImageNetTrainer:
             param_groups,
             momentum=momentum,
         )
-        self.loss = ch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+        
+        loss_name = self.config["train"].get("loss", {"name": "crossentropy"})
+        self.loss_name = loss_name["name"]
+        if self.loss_name == "crossentropy":
+            self.loss = ch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+        elif self.loss_name == "trades":
+            self.ce_loss = ch.nn.CrossEntropyLoss(label_smoothing=label_smoothing)
+            self.loss = TRADESLoss(self.ce_loss, beta=self.config["train"]["loss"]["beta"])
+        else:
+            raise NotImplementedError
+
 
     @param('data.train_dataset')
     @param('data.num_workers')
@@ -414,8 +429,8 @@ class ImageNetTrainer:
                 }
 
                 self.eval_and_log(extra_dict)
-            # if self.gpu == 0:
-            #     self.save_checkpoint(epoch)
+            if self.gpu == 0:
+                self.save_checkpoint(epoch)
 
 
         self.eval_and_log({'epoch':epoch})
@@ -531,20 +546,6 @@ class ImageNetTrainer:
                 filter_size=filt_size,
                 learnable=self.learnable,
             )
-        elif self.config["train"]["model"] in ("convnext_lipreg_aa", "convnext_lipreg_aa-adv"):
-            self.AntiAliasing = True
-            self.learnable = True
-            filt_size = self.config["train"].get("filt_size", 3)
-            model = LipReg_aa_ConvNextV2(
-                wavelet_level=self.config["train"]["wavelet_level"],
-                wavelet_method=self.config["train"]["wavelet_method"],
-                num_classes=1000,
-                jacobian_delta=self.config["train"]["jacobian_delta"],
-                k=self.config["train"]["k"],
-                filter_size=filt_size,
-                learnable=self.learnable,
-                depths=[3, 3, 27, 3], dims=[192, 384, 768, 1536]
-            )
 
         model = model.to(memory_format=ch.channels_last)
         model = model.to(self.gpu)
@@ -555,8 +556,21 @@ class ImageNetTrainer:
         return model, scaler
 
     def attack_step(self, input, label):
-        adv_input = self.attacker.run(input, label) #.detach()
-        return adv_input.requires_grad_(True), label
+        target = label
+        was_training = self.model.training
+
+        if self.loss_name == "trades":
+            self.model.eval()
+            with ch.no_grad():
+                target = F.softmax(self.model(input), dim=1).detach()
+
+        try:
+            adv_input = self.attacker.run(input.clone(), target).detach()
+        finally:
+            if was_training:
+                self.model.train()
+
+        return adv_input.requires_grad_(False), label
 
     def lpf_smoothness_loss(self, module, alpha=1e-4, beta=5e-5, eps = 1e-8):
         a = module.get_kernel()
@@ -571,6 +585,23 @@ class ImageNetTrainer:
         center = (a * idx.abs()).mean()
         return alpha * smooth + beta * center
 
+    def antialiasing_regularization_loss(self):
+        aa_reg_alpha = self.config["train"].get("aa_reg_alpha", 0.0)
+        aa_reg_beta_alpha = self.config["train"].get("aa_reg_beta_alpha", 0.5)
+        if (not self.AntiAliasing) or (aa_reg_alpha <= 0.0):
+            return 0.0
+
+        reg = 0.0
+        for m in self.model.module.modules():
+            if self.learnable and isinstance(m, BlurPool):
+                _ = m.get_kernel()
+                reg = reg + self.lpf_smoothness_loss(
+                    m,
+                    alpha=aa_reg_alpha,
+                    beta=aa_reg_alpha * aa_reg_beta_alpha,
+                )
+        return reg
+
     @param('logging.log_level')
     def train_loop(self, epoch, log_level):
         model = self.model
@@ -582,6 +613,7 @@ class ImageNetTrainer:
         lrs = np.interp(np.arange(iters), [0, iters], [lr_start, lr_end])
 
         iterator = tqdm(self.train_loader)
+        # ch.autograd.set_detect_anomaly(True)
         for ix, (images, target) in enumerate(iterator):
             images = images.requires_grad_(True)
             ### Training start
@@ -590,27 +622,40 @@ class ImageNetTrainer:
 
             self.optimizer.zero_grad(set_to_none=True)
             if self.attacker is not None:
-                images, target = self.attack_step(images, target)
-            with autocast():
-                output = self.model(images)
-                # loss_train = self.loss(output, target)
-                loss_train = self.loss(output, target) + self.model.module.penalty
+                attacked, target = self.attack_step(images, target)
+                if self.loss_name != "trades":
+                    images = attacked
 
-                aa_reg_alpha = self.config["train"].get("aa_reg_alpha", 0.0)
-                aa_reg_beta_alpha = self.config["train"].get("aa_reg_beta_alpha", 0.5)
-                if (self.AntiAliasing) and (aa_reg_alpha > 0.0):
-                    reg = 0.0
-                    for m in self.model.module.modules():
-                        if self.learnable and isinstance(m, BlurPool):
-                            _ = m.get_kernel()
-                            reg = reg + self.lpf_smoothness_loss(m, 
-                                                                 alpha=aa_reg_alpha, 
-                                                                 beta=aa_reg_alpha * aa_reg_beta_alpha)
-                    loss_train = loss_train + reg
+            if self.loss_name == "trades":
+                with autocast():
+                    output = self.model(images)
+                    loss_natural = self.loss.criterion_ce(output, target)
 
-            self.scaler.scale(loss_train).backward()
-            if hasattr(self.model.module, "post_penalty"):
-                self.model.module.post_penalty(images)
+                self.scaler.scale(loss_natural).backward()
+                if hasattr(self.model.module, "post_penalty"):
+                    self.model.module.post_penalty(images)
+
+                with autocast():
+                    attacked_logit = self.model(attacked)
+                    loss_robust = self.loss.beta * self.loss.criterion_kl(
+                        F.log_softmax(attacked_logit, dim=1),
+                        F.softmax(output.detach(), dim=1),
+                    )
+                    loss_second = loss_robust + self.model.module.penalty
+                    loss_second = loss_second + self.antialiasing_regularization_loss()
+                    loss_train = loss_natural.detach() + loss_second
+
+                self.scaler.scale(loss_second).backward()
+            else:
+                with autocast():
+                    output = self.model(images)
+                    loss_ = self.loss(output, target)
+                    loss_train = loss_ + self.model.module.penalty
+                    loss_train = loss_train + self.antialiasing_regularization_loss()
+
+                self.scaler.scale(loss_train).backward()
+                if hasattr(self.model.module, "post_penalty"):
+                    self.model.module.post_penalty(images)
 
             self.scaler.step(self.optimizer)
             self.scaler.update()
@@ -649,7 +694,10 @@ class ImageNetTrainer:
                     for k in ['top_1', 'top_5']:
                         self.val_meters[k](output, target)
 
-                    loss_val = self.loss(output, target)
+                    if self.loss_name == "trades":
+                        loss_val = self.ce_loss(output, target)
+                    else:
+                        loss_val = self.loss(output, target)
                     self.val_meters['loss'](loss_val)
 
         stats = {k: m.compute().item() for k, m in self.val_meters.items()}

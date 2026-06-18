@@ -11,7 +11,7 @@ import collections.abc as container_abcs
 import math
 
 import torch
-from attacks.base import Attacker
+from .base import Attacker
 from torch.nn import functional as F
 
 DEFAULT_EPS_DICT_BY_NORM = {"Linf": 0.3, "L2": 1.0, "L1": 5.0}

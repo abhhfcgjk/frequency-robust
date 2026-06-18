@@ -162,10 +162,16 @@ class AdversarialEvaluator:
 
     def eval(self) -> None:
         self._prepare_for_eval()
+        # checkpoint = torch.load(self.model_path)
+        # if self.is_ddp_model(checkpoint["model"]):
+        #     checkpoint["model"] = {k.replace("module.", ""): v for k, v in checkpoint["model"].items()}
+        # self.model.load_state_dict(checkpoint["model"])
+
         checkpoint = torch.load(self.model_path)
-        if self.is_ddp_model(checkpoint["model"]):
-            checkpoint["model"] = {k.replace("module.", ""): v for k, v in checkpoint["model"].items()}
-        self.model.load_state_dict(checkpoint["model"])
+        if self.is_ddp_model(checkpoint):
+            checkpoint = {k.replace("module.", ""): v for k, v in checkpoint.items()}
+        self.model.load_state_dict(checkpoint)
+
         self.metric_computer = MetricPerformance(self.num_classes)
         results = {}
         att_accuracys = []
